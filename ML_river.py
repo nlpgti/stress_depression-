@@ -63,8 +63,9 @@ def find_counterfactual(
                 if feature in numeric_bounds:
                     (min_val, max_val) = numeric_bounds[feature]
                 else:
-                    # Si no tienes bounds, puedes asumir un rango por defecto
-                    (min_val, max_val) = (val - 10, val + 10)
+                    min_val=0
+                    max_val=1
+
 
                 # Generamos un factor aleatorio en [-step_size, step_size]
                 perturb_factor = random.uniform(-step_size, step_size)
