@@ -30,7 +30,7 @@ def prepare_dataset():
 
 if __name__ == '__main__':
     prepare_dataset()
-    get_new_annotation_from_dataset("datasets/celia_preprocessed.csv","datasets/dataset_by_sessions_gptv3.csv")
+    get_new_annotation_from_dataset("in_file","out_file")
 
 
 

@@ -31,7 +31,7 @@ def instance_distance(x_original: dict, x_modified: dict):
     return dist, dist_dic
 
 def find_counterfactual(
-        dataset_sensores,
+        dataset,
         model,
         x_original: dict,
         desired_label,
@@ -41,9 +41,9 @@ def find_counterfactual(
        'problemas_salud', 'emociones_positivas', 'emociones_negativas',
        'tristeza', 'angustia', 'soledad', 'negativos', 'adverbios_negativos',
        'términos_catastróficos', 'términos_exagerados', 'conceptos_repetidos']
-    list_features_to_change = list(dataset_sensores.columns[dataset_sensores.columns.str.contains('@')]) + list_features_to_change
+    list_features_to_change = list(dataset.columns[dataset.columns.str.contains('@')]) + list_features_to_change
     numeric_bounds = {
-        col: (dataset_sensores[col].min(), dataset_sensores[col].max()) for col in dataset_sensores.columns
+        col: (dataset[col].min(), dataset[col].max()) for col in dataset.columns
     }
 
     best_cf = None
@@ -148,58 +148,58 @@ def start_river_analysis(data):
     classifier_model = {"model": model_to_analyse,
                         "elements": 0}
 
-    dataset_sensores = pd.read_csv(path)
+    dataset = pd.read_csv(path)
 
 
     list_params_eval = [ 'polaridad', 'interjecciones', 'inseguridad',
        'problemas_salud', 'emociones_positivas', 'emociones_negativas',
        'tristeza', 'angustia', 'soledad', 'negativos', 'adverbios_negativos',
        'términos_catastróficos', 'términos_exagerados', 'conceptos_repetidos']+columns_to_drop
-    columns_with_at = dataset_sensores.columns[dataset_sensores.columns.str.contains('@')]
+    columns_with_at = dataset.columns[dataset.columns.str.contains('@')]
     filtered_columns = [col for col in columns_with_at if not any(x in col.lower() for x in ['ansiedad', 'depresión'])]
     list_params_eval = list(filtered_columns) + list_params_eval
 
-    dataset_sensores = dataset_sensores[list_params_eval]
-    dataset_sensores = dataset_sensores.sort_values(by=['timestamp'], ascending=True)
-    dataset_sensores.reset_index(drop=True, inplace=True)
+    dataset = dataset[list_params_eval]
+    dataset = dataset.sort_values(by=['timestamp'], ascending=True)
+    dataset.reset_index(drop=True, inplace=True)
 
-    dataset_sensores = dataset_sensores[dataset_sensores["target"] != "depression"].reset_index(drop=True)
+    dataset = dataset[dataset["target"] != "depression"].reset_index(drop=True)
 
-    dataset_sensores = dataset_sensores.sort_values(by=["user_id", "timestamp"])
+    dataset = dataset.sort_values(by=["user_id", "timestamp"])
 
     # Aplicar la función y resetear el índice
-    dataset_sensores = (
-        dataset_sensores.groupby("user_id", group_keys=False)
+    dataset = (
+        dataset.groupby("user_id", group_keys=False)
         .apply(sample_every_3_include_last)
         .reset_index(drop=True)
     )
 
     if verbose:
-        print(dataset_sensores.shape)
+        print(dataset.shape)
 
-    dataset_sensores=dataset_sensores.round(2)
+    dataset=dataset.round(2)
     if only_users:
-        dataset_sensores = dataset_sensores.drop_duplicates(subset=['user_id'], keep='last')
-        dataset_sensores.reset_index(drop=True, inplace=True)
+        dataset = dataset.drop_duplicates(subset=['user_id'], keep='last')
+        dataset.reset_index(drop=True, inplace=True)
 
     if verbose:
-        print(dataset_sensores.shape)
+        print(dataset.shape)
 
-    dataset_sensores = dataset_sensores.fillna(0)
-    dataset_sensores = dataset_sensores.drop_duplicates()
-    dataset_sensores.reset_index(drop=True, inplace=True)
-
-    if verbose:
-        print(dataset_sensores.shape)
-
-    dataset_sensores = dataset_sensores.iloc[:-1:window_step]
+    dataset = dataset.fillna(0)
+    dataset = dataset.drop_duplicates()
+    dataset.reset_index(drop=True, inplace=True)
 
     if verbose:
-        print(dataset_sensores.shape)
+        print(dataset.shape)
 
-    y = dataset_sensores[target]
+    dataset = dataset.iloc[:-1:window_step]
 
-    X = dataset_sensores[dataset_sensores.columns.difference(columns_to_drop)]
+    if verbose:
+        print(dataset.shape)
+
+    y = dataset[target]
+
+    X = dataset[dataset.columns.difference(columns_to_drop)]
 
     if correlation_selection:
         selector = feature_selection.SelectKBest(similarity=stats.PearsonCorr(), k=round(len(X.columns)*0.80))
@@ -379,19 +379,19 @@ def assign_predicted(row):
 
 def evaluate_paper_gpt():
     path = "path"
-    dataset_sensores = pd.read_csv(path)
-    dataset_sensores = dataset_sensores[dataset_sensores["target"] != "depression"].reset_index(drop=True)
-    dataset_sensores = dataset_sensores.sort_values(by=["user_id", "timestamp"])
+    dataset = pd.read_csv(path)
+    dataset = dataset[dataset["target"] != "depression"].reset_index(drop=True)
+    dataset = dataset.sort_values(by=["user_id", "timestamp"])
 
-    dataset_sensores = (
-        dataset_sensores.groupby("user_id", group_keys=False)
+    dataset = (
+        dataset.groupby("user_id", group_keys=False)
         .apply(sample_every_3_include_last)
         .reset_index(drop=True)
     )
 
-    dataset_sensores['predicted_gtp'] = dataset_sensores.apply(assign_predicted, axis=1)
+    dataset['predicted_gtp'] = dataset.apply(assign_predicted, axis=1)
 
-    complete_info_result=print_metrics(None,"llm", dataset_sensores['target'], dataset_sensores['predicted_gtp'])
+    complete_info_result=print_metrics(None,"llm", dataset['target'], dataset['predicted_gtp'])
     print(complete_info_result["latex"])
 
 
